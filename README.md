@@ -7,13 +7,13 @@ With 96-bit float, that covers **99.9%+** of cases.
 		
 If it is *very close* to halfway, it uses arbitrary precision math to break ties.		
 		
-| X | *select* math libraries to use w/ -D USE_LIB=X            |		
-|---|---|
-| 0 | no library, use David Gay's dtoa.c for hard cases         |		
-| 1 | link with MAPM C libary (my revised version)              |		
-| 2 | same as 1, but use only *high-school* multiply (very lean)|		
-| 3 | same as 2, but #include as 1 BIG file (just like dtoa.c)  |		
-| 4 | link with GMP for hard cases (DEFAULT)                    |		
+| X | select math libraries to use with -D USE_LIB=X |		
+|---| ---|
+| 0 | no library, use David Gay's dtoa.c for hard cases        |		
+| 1 | link with MAPM C libary (my revised version)             |		
+| 2 | same as 1, but only use *high-school* multiply           |		
+| 3 | same as 2, but #include as 1 BIG file (just like dtoa.c) |		
+| 4 | link with GMP for hard cases (DEFAULT)                   |		
 		
 ## dtoa.c:		
 dtoa.c need to set rounding mode to 53-bits precision.		
@@ -52,7 +52,7 @@ Thanks to Rick Regan's articles in http://www.exploringbinary.com/
 | dtoa-ifmt.c     | in-place format dtoa_fast() result, mode allowed = [regREG] |		
 | dtoa-mode.c     | double to string, honors rounding mode                      |		
 | dtoa.c          | 96-bit float version of dtoa.c (can disable with -DNO_BF96) |		
-| mapm-src.c      | much revised MAPM C Library (I name it version 5.0)         |		
+| mapm-src.7z     | much revised MAPM C Library (I name it version 5.0)         |		
 | max-ulp.py      | strtod-fast.c accuracy simulation, max ulp <= 25 (96-bits)  |		
 | strtod-aux.c    | strtod_ulp() for getting sign of (str - halfway)            |		
 | strtod-fast.c   | string to double, uses FE_TONEAREST only                    |		
