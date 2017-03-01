@@ -16,9 +16,9 @@ If it is *very close* to halfway, it uses arbitrary precision math to break ties
 | 4 | link with GMP for hard cases (DEFAULT)                   |		
 		
 ## dtoa.c:		
-dtoa.c need to set rounding mode to 53-bits precision.		
-Before calculation, fesetenv(FE_PC53_ENV) maybe needed		
-After calculation, restore precision mode maybe needed		
+dtoa.c **need** setting of 53 bits double precision FE_PC53_ENV		
+If Honor_FLT_ROUNDS is defined, it read rounding mode with fegetround() 	
+If *not* defined, rounding mode **must** be in FE_TONEAREST
 		
 This option was added to show 96-bit float idea will speed up dtoa.c		
 David Gay have now added 96-bit float idea to dtoa.c (old version = -D NO_BF96)		
@@ -47,7 +47,7 @@ Thanks to Rick Regan's articles in http://www.exploringbinary.com/
 | Files           | Comments |		
 | -----           | -------- |		
 | dtoa-aux.c      | common routine for dtoa-fast.c and dtoa-mode.c              |		
-| dtoa-fast.c     | double to string, uses FE_TONEAREST only                    |		
+| dtoa-fast.c     | double to string, FE_TONEAREST only (even if it is not)     |		
 | dtoa-fast.txt   | explanations / proves of dtoa_fast()                        |		
 | dtoa-ifmt.c     | in-place format dtoa_fast() result, mode allowed = [regREG] |		
 | dtoa-mode.c     | double to string, honors rounding mode                      |		
@@ -55,7 +55,7 @@ Thanks to Rick Regan's articles in http://www.exploringbinary.com/
 | mapm-src.7z     | much revised MAPM C Library (I name it version 5.0)         |		
 | max-ulp.py      | strtod-fast.c accuracy simulation, max ulp <= 25 (96-bits)  |		
 | strtod-aux.c    | strtod_ulp() for getting sign of (str - halfway)            |		
-| strtod-fast.c   | string to double, uses FE_TONEAREST only                    |		
+| strtod-fast.c   | string to double, FE_TONEAREST only (even if it is not)     |		
 | strtod-fast.txt | explanations / proves of strtod_fast()                      |		
 | strtod-gmp.c    | strtod_ulp() using GMP (scale only halfway side)            |		
 | strtod-mode.c   | string to double, honors rounding mode                      |		
