@@ -58,6 +58,7 @@ Thanks to Rick Regan's articles in http://www.exploringbinary.com/
 | strtod-fast.c   | string to double, FE_TONEAREST only (even if it is not)     |		
 | strtod-fast.txt | explanations / proves of strtod_fast()                      |		
 | strtod-gmp.c    | strtod_ulp() using GMP (scale only halfway side)            |		
-| strtod-mode.c   | string to double, honors rounding mode                      |		
+| strtod-mode.c   | string to double, honors rounding mode                      |
+| strtod-mpfr.c   | strtod implementation using mpfr, to test strtod_fast()     |
 | test.c          | strtod, dtoa, and round-trip tests of my routines           |		
 		
