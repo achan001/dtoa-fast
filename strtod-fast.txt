@@ -381,7 +381,7 @@ HOW TO USE
 
 -D USE_LIB=2, same as above, but disable fft and
    div-and-conq code, ONLY use high school multiply.
-   Good enough since max decimal digits <= 767.
+   Good enough since max decimal digits <= 768.
 
 -D USE_LIB=3, same as above, but generate 1 BIG file,
    just like dtoa.c (libmapm.a NOT NEEDED)
