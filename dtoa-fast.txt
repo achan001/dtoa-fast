@@ -62,7 +62,7 @@ max_frac_error = 13 / 2^39 = 2.365e-11
 
 Set ERR to handle both functions:
 -> ERR = 16 / 2^39 = 0x1p-35 = 2.910e-11
--> ERR < max_frac_error
+-> ERR > max_frac_error
 
 Prove dtoa_shortest() work
 ==========================
