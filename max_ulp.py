@@ -7,7 +7,7 @@
 # Example:
 #
 # max_ulp.py                # search for n with max of 8 scales
-# max_ulp.py -300           # max ulp if n = 300
+# max_ulp.py 300            # max ulp if n = 300
 # max_ulp.py 10 20          # n = range(10, 20) = 10 to 19
 
 # To generate max_ulp distribution plot
