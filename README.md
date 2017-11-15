@@ -33,6 +33,7 @@ Remaining hard cases uses arbitrary precision math to break ties.
 | dtoa.c          | David Gay's dtoa.c, to test strtod_fast() / dtoa_fast()     |		
 | mapm-src.7z     | much revised MAPM C Library v5.0                            |		
 | max_ulp.7z      | simulation shows max ulp error at most 95 ULP               |
+| max_ulp.txt     | PROVED max ulp error is at most 95 ULP                      |
 | strtod-aux.c    | use MAPM to break ties for hard cases                       |		
 | strtod-fast.c   | string to double, use **FE_TONEAREST** mode                 |		
 | strtod-fast.txt | algorithm used for strtod-fast.c and strtod-mode.c          |		
