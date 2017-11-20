@@ -162,7 +162,7 @@ if (d is integer AND |d-b| <= 98 ULP):
     if d <= 0x1p89: return 0
     if d <= 0x1p93: return (int)(n0 + 6) >> 31
 
-FAST-PATH can extend to 1E27 (NOT implemented)
+FAST-PATH can extend to 1E28 (NOT implemented)
 ============================
 When d reached 28 digits, 1E-1 is never used.
 -> no scaling errors at all, n0 is EXACT
