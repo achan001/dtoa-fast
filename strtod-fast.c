@@ -100,7 +100,7 @@ HEX_CVT:
   d = 0;
   if (bexp < 0) d=-bexp, bexp=0;    // pos d = denormal
   m <<= lz;
-  if (lz < 10 + d) {                // m > 53 bits
+  if (lz < 10 + d) {                // m > 53 - d bits
     uint64_t halfway = 0x200ULL<<d;
     if (m & (halfway * 3 - 1)) m += halfway;
   }
