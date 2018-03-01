@@ -7,9 +7,9 @@ Both uses **normalized 96-bits big float** for calculations
 
 If estimate is **far** from halfway, no need for arbitrary precision math		
 
-If estimate is **guaranteed** halfway, no need for arbitrary precision math (**FAST-PATH**)
+If estimate is **guaranteed** halfway, no need for arbitrary precision math
 
-Remaining hard cases uses arbitrary precision math library to break ties.		
+Remaining **hard cases** uses arbitrary precision math library to break ties.		
 		
 | X | math libraries to use with -D USE_MAPM=X                            |		
 |---| --------------------------------------------------------------------|
