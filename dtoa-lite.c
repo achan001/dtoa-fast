@@ -76,7 +76,7 @@ static struct dtoa_case *dtoa_shortest
   
   if (dtoa_safe(m + j, j - i, dec)) return &safe;
   
-  // skip half-way cases -> possibly extra digits
+  // skip edge cases -> possibly extra digits
   
   safe.str[LAST] -= j - (frac > 0.5);  
   if (fabs(frac - 0.5) < ERR)
