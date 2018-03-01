@@ -28,7 +28,8 @@ Remaining hard cases uses arbitrary precision math to break ties.
 | dtoa-aux.c      | common routine for dtoa-fast.c and dtoa-mode.c              |		
 | dtoa-fast.c     | double to string, use **FE_TONEAREST** mode                 |		
 | dtoa-fast.txt   | algorithm used for dtoa-fast.c and dtoa-mode.c              |
-| dtoa-ifmt.c     | in-place format dtoa_fast() result, mode allowed = [regREG] |		
+| dtoa-ifmt.c     | in-place format dtoa_fast() result, mode allowed = [regREG] |	
+| dtoa-lite.c     | dtoa-fast without bignum library, accurary > 99.95%         |
 | dtoa-mode.c     | double to string, honors rounding mode                      |		
 | dtoa.c          | David Gay's dtoa.c, to test strtod_fast() / dtoa_fast()     |		
 | mapm-src.7z     | much revised MAPM C Library v5.0                            |		
@@ -37,7 +38,8 @@ Remaining hard cases uses arbitrary precision math to break ties.
 | strtod-aux.c    | use MAPM to break ties for hard cases                       |		
 | strtod-fast.c   | string to double, use **FE_TONEAREST** mode                 |		
 | strtod-fast.txt | algorithm used for strtod-fast.c and strtod-mode.c          |		
-| strtod-gmp.c    | use GMP to break ties for hard cases                        |		
+| strtod-lite.c   | strtod-fast without bignum library, accuracy almost 100%    |
+| strtod-gmp.c    | use GMP to break ties for hard cases                        |
 | strtod-mode.c   | string to double, honors rounding mode                      |
 | strtod-mpfr.c   | strtod implementation using MPFR                            |
 | test.c          | strtod, dtoa, and round-trip tests of my routines           |	
