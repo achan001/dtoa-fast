@@ -1,0 +1,347 @@
+Author: Albert Chan
+email : albertmcchan@yahoo.com
+
+Fast way to process string to double conversion
+===============================================
+strtod() is mathematically a very simple function.
+Using arbitrary precision integer mathematics,
+conversion can be obtain with only a few lines of code.
+The scaled mantissa can then be rounded as needed.
+
+  m * 10^e = (m * 5^e) * 2^e  = b * 2^e
+
+To make strtod() fast, however, arbitrary precision math
+should be used as little as possible.
+
+All calculation is done with 96-bit normalized float.
+To avoid rounding errors from affecting conversion, any close to
+half-way cases will be handled using arbitrary precision math.
+
+Convert string to m * 10**e
+===========================
+The code read upto 28 decimal digits.
+
+1e28 - 1 = 0.504871 * 2^94 < 0x1p96
+-> decimal to bits have no error
+
+chopping 29+ dec digits:
+max dec rel error = 1/1e27 * 2^96 ULP = 79.2282 ULP
+
+Scaling m*10^e to 0.n2n1n0 * 2^bexp
+===================================
+The goal is scale away the term 10^e
+Scaled mantssia is transformed into 3 unsigned n2 n1 n0 (96 bits)
+
+To simplify code, all scalings (and constants) is performed
+in round-down mode. (97+ bits chopped)
+
+2 special constants 1e-73, 1e60 is used to scale e = [0, 60)
+Final scalings are done with 1e25 and 10, 100, ... 1e12.
+
+Proved by brute force, most scalings needed = 8 multiplies.
+
+Data Structure
+==============
+IEEE double have BIAS of 1023, WITH imply bit for normal.
+My 96 bit estimate have BIAS of 1021 AND WITHOUT imply bit:
+
+mantissa = 0.n2n1n0 (total 96 bits) = [0.5, 1)
+number = mantissa * 2^(bexp - 1021)
+
+bexp < 0 -> subnormal
+bexp >= 2046 -> infinity
+Test for non-normal with 1 test: (unsigned) bexp >= 2046
+
+With the difference of line-up 'bit 53' for rounding, subnormal
+is treated just like normal. (see How to round subnormal)
+
+To create the IEEE double, mantissa AND bexp OVERLAP on the
+imply bit (fields are ADD together, not OR together).
+Rounding logic only 'nudge' bit54.  Final round half up
+on 53 bit mantissa produce correct conversion.
+
+  union HexDouble u;
+  u.u =  (uint64_t) (neg<<11 | bexp) << 52;
+  u.u += ((uint64_t) n2<<21) + (((n1 >> 10) + 1) >> 1);
+  return u.d;
+
+Although it seems very different to IEEE definition, when
+the bits are lined up and ADD together, IEEE double is created
+WITHOUT corner cases (no overflow/underflow, normal/subnormal)
+
+Why Rounding Code So Short
+==========================
+IEEE double representation is designed to simplify coding.
+1 bit sign, 11 bit binexp, 52 fractinoal bits M all packed together.
+Imply bit is 'hidden' inside binexp to save space AND simplify code.
+
+When binexp = 0 AND M = 0, the number is considered ZERO
+-- round-down to zero with NO CODE
+
+When binexp 1 to 0x7fe, double is considered normal.
+-- round-up thru normal/subnormal boundary with NO CODE.
+
+When binexp = 0x7ff, M = 0, the number is considered infinity
+-- round-up to infinity with NO CODE
+
+Rounding Logic:
+===============
+
+  if (bot == 0) {
+    if ((n1 & 0xfff) == 0x400)    // round 01000 ...
+      if (n0 == 0) FIX_ROUND(0x400);
+  } else if (bot > HOLE) {
+    if ((n1 & 0x7ff) == 0x3ff)    // round ?0111 ...
+      if (n0 > HOLE) FIX_ROUND(0x3ff);
+  }
+
+  FIX_ROUND(x) is used for close to half-way cases.
+  Note that the logic only 'nudge' on bit54.
+  Final 53 bits round half up will produce correct roundings.
+
+How the 96 bits multiplier work
+===============================
+We use first 96 bits of a special constants to scale
+the number into its binary equivalent, adjusting binexp
+along the way (MUL96)
+
+binary bit pattern  ->    n2      n1      n0
+special constants   -> x  T2      T1      T0
+                       ---------------------
+                        T2n0    T1n0    T0n0
+                T2n1    T1n1    T0n1
+        T2n2    T1n2    T0n2
+
+We then sum the columns, keeping first 3 columns (128 bits).
+A final normalization step will force the first bit to be 1,
+keeping 96 bits back in n2, n1, n0, and chop the rest.
+
+To speed up calculation, column 4 and 5 are ignored.
+
+What make 1e60, 1e-73 special?
+==============================
+T2, T1, T0, n2, n1, n0 were all under 32 bits.
+
+Each product may be full 64 bits, and summing it might
+get overflow problem, especially we want SPEED.
+
+Also, we need a constant that is considerably "bigger".
+Less scalings imply better estimate and faster speed.
+
+To keep the scaled mantissa ALWAYS an under-estimate, the
+constants must be an under-estimate (hopefully not by much).
+
+Both numbers (1e60, 1e-73) can scale the number very quickly.
+
+Both have 97th and 98th bit = 0 -> both 97+ bits accurate.
+
+The sum of all columns will not overflow in 64 bits.
+
+To prove NO overflow, we "exaggerate" the problem.
+
+1e-73 = 0x0.B4ECD5F0,1A4AA828,1E38AEB6p-242
+1e+60 = 0x0.9F4F2726,179A2245,01D76242p+200
+
+Exaggerate the estimate: n2 = n1 = n0 = 0xffffffff + 1 = 0x1p32
+Exaggerate the constant: T2,T1,T0 = 0xb5000000, 0x20000000, 0x20000000
+
+  Column4 = T1n0 + T0n1 + T0n0 >> 32
+          = (T1 + T0) << 32 | carry4
+          = 0xd5000000 << 32 | carry4
+  Column3 = T2n0 + T1n1 + T0n2 + carry3
+          = (T2 + T1 + T0) << 32 | carry3
+          = 0xf5000000 << 32 | carry3
+  Column2 = T2n1 + T1n2 + carry2
+          = (T2 + T1) << 32 | carry3
+          = 0x40000000 << 32 | carry3
+
+  All columns under 64 bits ... QED
+
+How to round subnormal?
+=======================
+The rule ask to round at bits BEFORE 53, depending on
+how small the number is.  Instead of rounding at some bits,
+I force it back to "normal", and re-use normals rounding code
+
+To maximize screening power, bottom bits BEFORE SHIFTING
+were saved and later examined as needed.
+
+Because of IEEE double design, bits need not be "restored".
+Shifting is actually NECESSARY even without rounding.
+
+Why Use M_APM C Libray?
+=======================
+Because I can't get any other to work on my Windows XP.
+
+It happened that M_APM C library does arbitrary decimal
+math in base 10. (actually 100 or 10000, for speed)
+
+Operation + - *, integer power is done exactly.
+Its range is 2 billion digits, 2 billions in exponents
+
+I have improved on the code to make it fast and elegant.
+Its validate program run 12x speed of original !
+
+strtod_fast() SPEED
+===================
+I have test it against Gay and Gcc 3.4.2 version.
+It's speed is 5 to 10x of Gcc
+
+With d1c, it's speed ~ 6x of Gay
+Gcc is MUCH faster, but producing incorrect result.
+
+With random numbers, it's speed ~ 3x Gay ~ 5x Gcc
+
+dtoa.c hardware fast-path code is not implemented.
+Integer math is MUCH simpler, and just as fast.
+With fast-path cases, its' speed ~ 0.9x Gay
+
+NOTE: dtoa.c fast-path asummed FE_PC53_ENV, FE_TONEAREST.
+
+strtod_hex 3/10/16
+===========---====
+Added hex float processing to strtod_fast()
+-- use small lookup table "." to "p" for speed
+-- use sticky bit for correct rounding
+-- skip rounding for 53 bits or less
+-- speed about 2x of dtoa.c gethex()
+
+ERROR ANALYSIS
+==============
+relative errors for each scalings:
+1. under-estimated big constants 1e-73, 1e60 :
+   1e-73 ~= 0x.B4ECD5F0,1A4AA828,1E38AEB6,360B1AF3p-242
+   1e+60 ~= 0x.9F4F2726,179A2245,01D76242,2C946590p+200
+   "Bad" const under-estimated error B:
+   1e-73 rel error ~= 0x360B1AF3 / 0xB4ECD5F0 = 0.2987
+   1e+60 rel error ~= 0x2C946590 / 0x9F4F2726 = 0.2798
+2. normalization 2 branches:
+   TOP = no need for normalization
+   BOT = shift bits 1-97 to bit 0-96, bexp -= 1
+3. MUL64, MUL96 sum only 3 cols out of 5 (for speed)
+   I will refer this as quick mul error Q
+   Note Q affected by normalization branches
+4. AFTER normalization, chopped 97+ bits = C Error < 1 / m
+
+Combining all of above (units = ULP):
+
+MUL96 TOP = B + (T1+T0)/2^32/m + 1/m        # m = [0.5, 1)
+MUL96 BOT = B + (T1+T0)/2^31/m + 1/m        # m = [T2/2^32, 1)
+
+1E+25 TOP = T0/2^32/m + 1/m = 1.25031/m <= 1.25031/0.5     = 2.5006
+1E+25 BOT = T0/2^31/m + 1/m = 1.50063/m <= 1.50063/0.51699 = 2.9026
+
+FACTOR      TOP       BOT       MAX
+1E-73       2.7402    2.3384    2.7402
+1E+60       2.4786    2.2062    2.4786
+1E+25       2.5006    2.9026    2.9026
+10 to 1E12  2.0       1.7180    2.0
+
+For scalings 7 times or less:
+    scaling error < (2.9026*6) m + 1 < 18.4156 = 18 ULP
+    max abs error = 79.2282 m + 18 < 97.2282   = 97 ULP
+
+For max of 8 scalings, 1E-73 used 5 times:
+    nexp = [-327, -316] # error(1E25 and 1E12) = 2.9026 + 2
+    nexp = [-314, -306] # error(1E25 x2 times) = 2.9026 * 2 -> WORST
+
+1E-73 / 2^242 = .70674
+.70674^5 = .70527 / 4   # need minimum of 2 BOT branches
+
+1E-73 5 times = 3*2.7402 + 2*2.3384 = 12.8974
+1E+25 2 times = 2*2.9026 = 5.8052
+scaling error = (12.8974 + 5.8052) m + 1 < 19.7026 = 19 ULP
+
+max abs error = 79.2282 m + 19 < 98.2282 = 98 ULP
+
+"Bad" ULP error found:
+mantissa      ULP error        x
+<= 28 digits  17.645 = 17 ULP  97492207803e-306
+>  28 digits  94.364 = 94 ULP  1000883030000000000000000000.999999E-319
+
+FAST-PATH
+=========
+non-integer usually get screened away due to
+"random bits" from decimal to binary conversion.
+It is very rare to get very close to half way cases.
+
+half-way integer is everywhere.
+For mode FE_TONEAREST, MANY have bit54+ = 1000 ...
+For directed rounding, MANY have bit54+ = 0000 ...
+
+0xC80000000000000000000000p-89      # 100, ULP = 2^-89
+0xCA0000000000000000000000p-89      # 101 = 100 + 2^89 ULP
+
+0xFFFFFFFFFFFFFFFFFFFFFF00p-7       # 0x1p89 - 2, ULP = 2^-7
+0xFFFFFFFFFFFFFFFFFFFFFF80p-7       # 0x1p89 - 1, +1 = 128 ULP
+0x800000000000000000000000p-6       # 0x1p89 = 6.1897E+026
+
+-> IF integer d < 0x1p89 THEN +1 >= 128 ULP
+
+PROVE: if integer d <= 0x1p89, d = b:
+
+Let d = value of decimal string, an integer
+Let e = scaled estimated binary,  d = [e, e + 98 ULP]
+Let b = possible half-way binary, b = [e, e + 98 ULP]
+-> |d - b| <= 98 ULP
+
+We do not know bexp of d, we only know bexp of e
+-> IF e < 0x1p89 and d is integer, THEN +1 >= 128 ULP
+-> d MIGHT reach 0x1p89 by rounding-up, but still OK
+
+My 96 bits setup, bits are normalized (to the left)
+-> d is integer <= 0x1p89, last  7 bits is '0'
+-> b is built by round-up, last 32 bits is '0'
+-> (|d - b| % 128 ULP = 0) AND (|d - b| <= 98 ULP)
+-> d = b
+-> FAST-PATH TEST:  bexp <= BIAS + 89
+
+QED
+
+Rounding Mode
+=============
+Added strtod-mode.c, which can handle rounding modes,
+similar to dtoa.c with -D Honor_FLT_ROUNDS
+Using million random samples:
+
+         FE_TONEAREST FE_DOWNWARD FE_UPWARD
+Hard cases         59          62      3089
+FAST-PATH         -58         -29     -3056
+                   ------------------------
+                    1          33        33
+
+Added FAST_BF96 version 11/19/2017:
+==================================
+Trading speed for code size, added an option to scale away 10^n
+in 1 step (also scale away dtoa_fast() 2^bexp in 1 step)
+
+Without dec_err:
+max rel error = bad const error + quick mul error + chop error
+              < 1/0.5 + 2/m + 1/m
+max abs error < 2 m + 3 < 5 = 4 ULP     # mantissa < 1E28
+
+With dec_err added:
+max abs error = 79.2282 m + 4 < 83.2282 = 83 ULP
+
+Worst case found !
+x = 1.000000000000000000000000000999999
+  -> 1.0                                # chopped "999999"
+  -> 0x.ffffffff,ffffffff,fffffffc      # 4 ULP scaling errors
+
+x abs error = 79.2282 + 4 = 83.2282 = 83 ULP
+
+Added strtod-lite.c 3/1/18
+==========================
+
+strtod without bignum library.
+close to 100% accurate conversion (but, not exactly 100%)
+close to half-way cases assumed halfway
+
+HOW TO USE
+==========
+-D USE_MAPM=0, use GMP Library (note: GMP has LGPL license)
+-D USE_MAPM=1, linke w/ MAPM libmapm.a (DEFAULT)
+-D USE_MAPM=2, same as 1, but use grade-school multiply only
+-D USE_MAPM=3, same as 2, but generate 1 BIG file, just like dtoa.c
+
+-D FAST_BF96 , speed up scaling with 96 bit big float (same as dtoa.c)
