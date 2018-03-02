@@ -30,8 +30,9 @@ Remaining **hard cases** uses arbitrary precision math library to break ties.
 | dtoa-aux.c      | common routine for dtoa-fast.c and dtoa-mode.c              |		
 | dtoa-fast.c     | double to string, use **FE_TONEAREST** mode                 |		
 | dtoa-fast.txt   | algorithm used for dtoa-fast.c and dtoa-mode.c              |
-| dtoa-ifmt.c     | in-place format dtoa_fast() result, mode allowed = [regREG] |	
-| dtoa-ifmt2.c    | same as above, but produce shortest string                  |
+| dtoa-ifmt0.c    | in-place format dtoa_fast() result, mode allowed = [regREG] |	
+| dtoa-ifmt1.c    | same as above, but "1.0" will returned as "1"               |
+| dtoa-ifmt2.c    | same as above, but returned shortest string, e.g. "1e9"     |
 | dtoa-lite.c     | dtoa-fast without bignum library, accurary 99.95%           |
 | dtoa-mode.c     | double to string, honors rounding mode                      |		
 | dtoa.c          | [David Gay's dtoa.c](http://www.netlib.org/fp/)             |		
