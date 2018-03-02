@@ -292,7 +292,7 @@ dtoa-lite.c 3/1/18
 ==================
 
 dtoa without bignum library.
-accurate about 99.5% for shortest digits
+accurate about 99.95% for shortest digits
 -- note: without testing edge case or half-way,
 -- it might not be shortest, but guaranteed round-trip
 
