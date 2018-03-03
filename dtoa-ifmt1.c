@@ -8,7 +8,7 @@
 // capitalized fmt uses 'E' instead of 'e'
 
 // s points to mantissa digits
-// -> s[-6] .. s[len+6] must be available to use
+// -> s[-6] .. s[len+5] must be available to use
 // -> buf[len + 12], s=buf+6 will cover all cases
 
 #ifdef DTOA_IFMT_G      // 1.0 -> "1.0"
