@@ -293,13 +293,13 @@ fmt 'g' -> "3.1416"      = shortest form
 capitalized fmt uses 'E' for exponent
 
 For dtoa.c output, we need to set up a buffer to store the string
-To cover all the fmts, s[-6] .. s[len + 6] must be avialable to use
+To cover all the fmts, s[-6] .. s[len + 5] must be avialable to use
 
 Example, using dtoa_r() for shortest digits:
 
 char *s, buf[17+12];    // shortest <= 17 digits
 
-s = dtoa_r(x, 0, 0, &dec, &sgn, &e, buf + 6 , sizeof(buf)-6);
+s = dtoa_r(x, 0, 0, &dec, &sgn, &e, buf+6 , sizeof(buf)-6);
 s = dtoa_ifmt(s, sgn, e-s, dec, 'g');
 
 dtoa-lite.c 3/1/18
