@@ -35,7 +35,7 @@ Remaining **hard cases** uses arbitrary precision math library to break ties.
 | dtoa-lite.c     | dtoa-fast without bignum library, accurary 99.95%           |
 | dtoa-mode.c     | double to string, honors rounding mode                      |		
 | dtoa.c          | [David Gay's dtoa.c](http://www.netlib.org/fp/)             |		
-| mapm-src.7z     | [MAPM C Library v5.0](https://github.com/achan001/MAPM-5)   |		
+| mapm-src.7z     | [MAPM C Library v5.1](https://github.com/achan001/MAPM-5)   |		
 | max_ulp.py      | simulation shows max ulp error at most 95 ULP               |
 | max_ulp.txt     | PROVED max ulp error is at most 95 ULP                      |
 | strtod-aux.c    | use MAPM to break ties for hard cases                       |		
