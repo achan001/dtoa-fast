@@ -363,3 +363,19 @@ dtoa-ifmt1.c    w/ flag DTOA_IFMT_G
 Although dtoa-ifmt1 is more verbose, I preferred its style.
 Decimal point (if any), always between 2 digits, easier to spot.
 Exponent followed by a sign, also easier to spot.
+
+10/20/19, dtoa-ifmt1.c & dtoa-ifmt2.c
+=====================================
+
+Added fmt='n': Normalized Floating Point Representation
+
+    0.5 <= mantissa < 1
+
+see Resonance article (Jan 2016) by V Rajaraman
+TITLE: IEEE Standard for Floating Point Numbers
+LINE : www.ias.ac.in/article/fulltext/reso/021/01/0011-0030
+
+Example, for 3.1416:
+
+dtoa-ifmt1.c, fmt='n' -> "0.31416e+001"
+dtoa-ifmt2.c, fmt='n' -> ".31416e1"

@@ -1,11 +1,13 @@
 #include "mapm/common.h"
 
 // formatted number INPLACE (need room front + back)
-// fmt 'E' use printf specs = -?d.d+E[+-]ddd
-// fmt 'r' -> "31416e-004"  = raw form w/ integer mantissa
-// fmt 'e' -> "3.1416e+000" = normalized mantissa
-// fmt 'g' -> "3.1416"      = shortest form
-// capitalized fmt uses 'E' instead of 'e'
+// Non-recognized fmt defaulted to fmt = 'e'
+// capitalized fmt uses capitalized 'E' exponent
+
+// fmt='n' -> "0.31416e+001" = normalized form, fractional mantissa
+// fmt='e' -> "3.1416e+000"  = exponential form, 1.xxxxxxx mantissa
+// fmt='r' -> "31416e-004"   = raw form, integer mantissa
+// fmt='g' -> "3.1416"       = shortest form
 
 // s points to mantissa digits
 // -> s[-6] .. s[len+5] must be available to use
@@ -20,20 +22,22 @@
 
 char* dtoa_ifmt(char *s, int sgn, int len, int dec, char fmt)
 {
+  int i = 0;
   if (ISDIGIT(*s)) {                    // skip Inf, NaN
-    if ((fmt|32)!='g' || dec < -3 || dec-len > 5 - DTOA_IFMT_G) {
-      char *p = &s[len];                // exponential form
-      if ((fmt|32)=='r') dec -= len;    // pat = d+E[+-]ddd
-      else if (dec--, len>1) {s[-1]=s[0]; *s-- = '.';}
-      *p++ = 'E' | (fmt&32);
-      *p++ = dec>=0 ? '+' : (dec=-dec, '-');
-      *p++ = '0' + dec/100; dec %= 100;
-      *p++ = '0' + dec/10;
-      *p++ = '0' + dec%10;
-      *p = '\0';
+    char c = fmt | 32;                  // fmt lower cased
+    if (c != 'g' || dec < -3 || dec-len > 5 - DTOA_IFMT_G) {
+      if (c == 'r') dec -= len;         // d+E[+-]ddd
+      else if (c == 'n')     {s[i = -2] = '0'; s[-1] = '.';}
+      else if (dec--, len>1) {s[i = -1] = s[0]; s[0] = '.';}
+      s[len++] = 'E' | (fmt & 32);
+      s[len++] = dec>=0 ? '+' : (dec=-dec, '-');
+      s[len++] = '0' + dec/100; dec %= 100;
+      s[len++] = '0' + dec/10;
+      s[len++] = '0' + dec%10;
+      s[len++] = '\0';
     } else if (dec <= 0) {              // 0.0{0,3}d+
-      do { *--s = '0'; } while (dec++ <= 0);
-      s[1] = '.';
+      do { s[--i] = '0'; } while (dec++ <= 0);
+      s[i+1] = '.';
     } else if (dec < len) {             // d+.d+
       do {s[len+1] = s[len];} while (dec < len--);
       s[dec] = '.';
@@ -43,6 +47,6 @@ char* dtoa_ifmt(char *s, int sgn, int len, int dec, char fmt)
       if (DTOA_IFMT_G) s[dec-2] = '.';
     }
   }
-  if (sgn) *--s = '-';                  // add sign
-  return s;
+  if (sgn) s[--i] = '-';                // add sign
+  return s + i;
 }
