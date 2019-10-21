@@ -2,11 +2,11 @@
 
 // formatted number INPLACE (need room front + back)
 // SHORTEST string by removed unneeded characters
-// Non-recognized fmt defaulted to fmt = 'e'
+// Non-recognized fmt defaulted to exponential form
 // capitalized fmt uses capitalized 'E' exponent
 
 // fmt='n' -> ".31416e1"    = normalized form, fractional mantissa
-// fmt='e' -> "3.1416e0"    = exponential form, 1.xxxxxxx mantissa
+// fmt='e' -> "3.1416e0"    = exponential form, d.ddddddd mantissa
 // fmt='r' -> "31416e-4"    = raw form, integer mantissa
 // fmt='g' -> "3.1416"      = shortest form
 
