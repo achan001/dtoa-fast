@@ -14,7 +14,7 @@ Remaining **hard cases** uses arbitrary precision math library to break ties.
 | X | math libraries to use with -D USE_MAPM=X                            |		
 |---| --------------------------------------------------------------------|
 | 0 | use **GMP** for hard cases (note: GMP had *GPL* license)            |		
-| 1 | link with **MAPM v5.0** *libmapm.a* (**DEFAULT** setting)           |		
+| 1 | link with **MAPM v5.1** *libmapm.a* (**DEFAULT** setting)           |		
 | 2 | same as 1, but use **grade-school** multiply only (no FFT)          |		
 | 3 | same as 2, but #include as 1 **BIG file** (no need for *libmapm.a*) |		
 			
