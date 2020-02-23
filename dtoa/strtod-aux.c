@@ -1,4 +1,4 @@
-#include "mapm/dtoa-fast.h"
+#include "mapm/mapm-dtoa.h"
 
 #define ULP()               strtod_ulp(str, n2, n1, bexp)
 #define FIX_0x400(r)        r += ULP() - 1

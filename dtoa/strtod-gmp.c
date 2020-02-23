@@ -1,4 +1,4 @@
-#include "mapm/dtoa-fast.h"
+#include "mapm/mapm-dtoa.h"
 #include "gmp/gmp.h"
 
 // parse a VALID decimal string so mantissa = s[i:j]

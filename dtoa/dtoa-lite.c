@@ -1,4 +1,4 @@
-#include "mapm/dtoa-fast.h"
+#include "mapm/mapm-dtoa.h"
 
 struct dtoa_case {int head, len, dec; char str[LAST+9];};
 static struct dtoa_case safe;
