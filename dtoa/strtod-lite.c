@@ -1,4 +1,5 @@
 // Convert String to Double Number FAST
+#include "dtoa/dtoa-fast.h"
 #include "mapm/mapm-dtoa.h"
 
 #define ULP()         0   // assumed halfway
