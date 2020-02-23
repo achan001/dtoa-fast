@@ -1,0 +1,381 @@
+Author: Albert Chan
+email : albertmcchan@yahoo.com
+
+### GOAL: code for shortest decimals conversion
+### Algorithm: re-use strtod_fast code for scalings + round-trip tests
+### Scale Double into 16-17 digits mantissa + frac
+### Scale AGAIN, range = mantissa + frac +/- ulp_safe, ulp_safe = [0.5,5)
+### With gap = [0, 9], this force shortest at most mantissa digits
+
+SCALE Tricks
+============
+Instead of scaling double to 17 decimal digits mantissa,
+the code scale upto 56 bits (3.6E15 to 7.2E16)
+
+x = M ULP                   # ULP = 2^bexp, M = 53 bits integer
+  = (M' + frac) 10^n        # scale away ULP, M' = 53-56 bits integer
+ ~= M' 10^n
+
+Let ulp = 0.5 ULP / 10^n:
+-> x + 0.5 ULP = x + 10^n ulp = (M' + frac + ulp) 10^n
+
+To calculate range of ulp:
+2 ulp = ULP / 10^n ~= (x/M) / (x/M') = M'/M
+range = 0.5 * [min(M'/M), max(M'/M)]
+
+BITS  ulp range (for normals, assumed x not power of 2)
+56       2 -   8    <- scale DOWN [5, 8)
+55       1 -   4    <- ok
+54     0.5 -   2    <- ok
+53    0.25 -   1    <- scale UP [0.25, 0.5)
+52   0.125 - 0.5    <- scale UP all
+
+PROVE: for shortest digits search, M' < 1E17
+============================================
+For shortest digits search: gap < 10
+
+1.  boundary case: x is power of 2 and FE_TONEAREST
+    gap = (0.5 + 1) ulp < 10
+    M'/M = 2 ulp = (2/1.5) gap < 40/3
+
+    max(M) = 2^52               // since x is power of 2
+    M' < 40/3 M < 40/3 max(M)
+    = 40/3* 2^52 = 6.0048E+016 < 1E17
+
+2.  non-boundary case or not FE_TONEAREST (opposite of 1)
+    gap  = 2 ulp < 10
+    M'/M = 2 ulp < 10
+
+    max(M) = 2^53-1 = 9.0072E+015
+    M' < 10 M < 10 max(M)
+    = 10 * 9.0072E+015 = 9.0072E+016 < 1E17
+
+QED
+
+ERROR ANALYSIS
+==============
+IEEE Double to 96 bits is exact (53 bits -> 96 bits)
+splitting bits into mantissa / frac is also EXACT
+
+At most 56 bits mantissa stored in 64 bit integer
+At least 96-56 = 40 bits frac stored in 53 bit double
+
+With my 96-bit setup (see strtod-fast.txt):
+max abs_error = 18.7026 m + 1 = 19.7026 = 19 ULP
+
+For dtoa_shortest():
+M' < 9.0072E+016 = 0.62500 * 2^57
+max abs_error = 18.7026 m + 1 = 12.6891 = 12 ULP
+max_frac_error = 12 / 2^39 = 2.183e-11
+
+For dtoa_do_digit():
+M' <= 1e17 = 0.69389 * 2^57
+max abs_error = 18.7026 m + 1 = 13.9775 = 13 ULP
+max_frac_error = 13 / 2^39 = 2.365e-11
+
+-> Set ERR to handle both functions
+-> ERR = 16 / 2^39 = 0x1p-35 = 2.910e-11
+-> ERR > max_frac_error
+
+Prove dtoa_shortest() work
+==========================
+
+A.  PROVE safe/edge ulp "safe" enough
+
+    Since safe/edge factor is multiplied into ulp, worst case
+    for ulp calculation is when ulp = 0.5 (smallest)
+
+    ulp_safe = ulp_exact(1 - 2ERR) <= ulp_exact - ERR
+    ulp_edge = ulp_exact(1 + 2ERR) >= ulp_exact + ERR
+
+    ERR > max_frac_error (see above)
+    -> ulp_safe exclude edges, ulp_edge included BOTH edges
+    -> safe/edge ulp has safety factor = 16/12 = 1.333
+
+    However, as frac_bits increase, frac is more accurate,
+    so ERR is MUCH BIGGER than max_frac_error:
+
+    For above case ulp = 0.5:
+    -> mantissa of 53 or 54 bits
+    -> frac of minimum 96 - 54 = 42 bits
+    -> max_frac_err = 19 / 2^42 = 19/128 ERR
+    -> safety factor = 128 / 19 = 6.737
+
+    safety factor
+    = 2^-34 min(ulp) / (19 / 2^frac_bits)
+    = min(ulp) * 2^(frac_bits - 34) / 19
+
+    frac_bits   min(ulp)  safety factor
+    39          4         6.737
+    40          2         6.737
+    41          1         6.737
+    42          0.5       6.737
+    43          0.5       13.473
+
+B.  PROVE safe range = [m + i, m + j], j-i < 10:
+    ulp_exact = mantissa of decimal string of 2 ^ n
+
+    Note: To simplified wording, from now on, ulp == ulp_safe
+
+    closest ulp ~ 5:
+    n       value               ulp
+    -486    5.00520774E-147     5.00520774 = 0.500520774 * 10
+    -1      0.5                 5 (1-2ERR) = 4.9999999997
+    484     4.99479768E+145     4.99479768
+
+    max(ulp) = 4.9999999997
+    i = ceil (frac - ulp)
+    j = floor(frac + ulp)
+
+    max(j-i) = floor(2 * max(ulp)) = 9 < 10
+
+SHORTEST decimal digits
+=======================
+
+safe range to shortest digits is best shown by example:
+range = 236.2 +/- 0.6 = [235.6, 236.8] = [236, 236] -> 236
+range = 236.2 +/- 1.6 = [234.6, 237.8] = [235, 237] -> 236
+range = 236.2 +/- 3.9 = [232.3, 240.1] = [233, 240] -> 24
+range = 12999 +/- 1.1 = [12997.9, 13000.1] = [12998, 13000] -> 13
+range = 12999 +/- 2.1 = [12996.9, 13001.1] = [12997, 13001] -> 13
+
+edge case:
+range = [1007.2, 1009.99999999] = [1008, 1009] -> 1009 ?
+edge "101" is shorter than "1009"
+-> if round-trip, then "101" is best
+
+hard case:
+range = 134.5 +/- 1.7 = [132.8, 136.2] = [133, 136] -> ?
+-> best case depends on exact fractions, not estimate
+-> need arbitrary precision math to decide
+-> For above example, if 134.5 is EXACT, round-to-even -> 134
+
+dtoa_fast.c is born ! 2/20/16
+=============================
+
+### Normal Double
+>test 4.3915445623487279e17
+mantissa => 43915445623487276 + 0.79999999999836291
+safe ulp => 3.1999999998137358
+safe = 43915445623487274 to 43915445623487279
+edge = .4391544562348728E18 FAILED
+best = 43915445623487277
++0x1.860c29ad5a33fp+58 = 4.3915445623487277e17
+
+### Subnormals
+>test 4.502463450621225E-321
+mantissa => 4500 + 0.93803361375601735
+safe ulp => 2.4703282290624431
+safe = 4499 to 4503
+best = 45
++0x0.000000000038fp-1022 = 4.5e-321
+
+dtoa_boundary()
+===============
+
+4/29/16: Rick Regan article "The Shortest Decimal String
+    That Round-Trips May Not Be The Nearest"
+--> falling thru 2^n boundary, sizeof ulp cut in half
+
+dtoa_boundary() is created, range = [x - ulp/2, x + ulp]
+
+Reusing dtoa_safe code, with new ulp bound:
+gap = 1.5 ulp = 2 ulp * 3/4
+-> ulp = 4/3 * [0.5, 5) = [2/3, 20/3)
+
+The code is simplified without edge case or hard case test,
+and confirmed by brute force using David Gay's dtoa.c result
+(x = 2^n, n = [-1022, 1023])
+
+It is not hard to check by hand. Only 1 hard case to check,
+the rest is too far from half-way to be of concern:
+
+0x1p-25  = 2.98023223876953125E-8   # frac = 0.5 EXACT
+best     = 2.9802322387695312E-8    # round-to-even
+
+dtoa_do_digit()
+===============
+
+return value similar to mode 2 of dtoa_gay
+Since double has only 53 bits accurary,
+number of decimal digits is limited to 17.
+
+dtoa-mode.c
+===========
+
+dtoa-fast.c, regardless of rounding mode, ALWAYS assume FE_TONEAREST.
+dtoa-mode.c, however, check the rounding mode, and round accordingly.
+If user use bit-flip operator to the number of digits requested, the
+code assumed rounding in opposite direction.
+
+So, the following is ALWAYS true (ALL rounding modes)
+
+    strtod(dtoa(x, ~0)) == x
+    strtod(dtoa(x,~17)) == x
+
+The code reuse FE_TONEAREST code by shifting "center":
+Example for FE_UPWARD:
+
+x to x + ulp = m + (frac_exact + ulp_exact) +/- ulp_exact
+            ~= m + (frac + ulp*(1+2*ERR)) +/- ulp_exact
+             = m + frac' +/- ulp_exact
+
+ulp_exact = (m + frac_exact) / u.d ~= m / u.d
+
+Since m is 52+ bits accurate, calculated ulp_exact
+from ulp is 50+ bits accurate, or 47+ bits accurate
+to the right of decimal point, much less than ERR
+
+error(frac') ~= error(frac) < ERR
+
+--> error of shifted center does not matter
+--> directed roundings can re-use FE_TONEAREST code
+
+### STASTICS 12/31/16
+SCALE
+    998358  samples
+    136689  scale up (x10) FAST
+     52681  scale down (/ SCALE)
+    808988  no scalings
+
+EDGE CASES
+       267  bot edge, 169 round-trip
+       274  top edge, 172 round-trip
+
+SAFE CASES
+    497071  digits shorten
+    500602  need correction = (frac>0.5) - j
+       344  hard case, frac ~ 0.5
+
+EASY CASES = 497071 + 500602 = 997673 (or 99.93%!)
+
+BITS    samples
+  56    211474
+  55    199585
+  54    198071
+  53    384027
+  52    5208
+
+dtoa_shortest() speedup
+=======================
+
+Based on above statistics, 50% of cases get shortened
+Prove: Any shortened safe case is best (can skip edge test)
+
+safe range that can be shortened:
+    Case 1: range does not ends in zero
+    Example: [115, 121] -> 12   # even if edge=[114,122], "12" is best
+
+    Case 2: range has 1 that ends in zero
+    Example: [115, 120] -> 12   # even if edge=[114,121], "12" is best
+    Example: [110, 119] -> 11   # edge 12 will NOT round-trip
+
+    Prove last example that edge will NOT round-trip:
+    2 edges = [11, 12]          # gap = 1 = 1 ULP
+    Since gap = 1 FULL ULP, only 1 edge will round-trip
+    11 is safe (WILL round-trip), 12 MUST be bad
+
+QED
+
+dtoa-ifmt1.c 2/8/17
+===================
+Added a poor man's sprintf (inplace conversion for speed)
+
+s = dtoa_fast(3.1416, 0, &sgn, &len, &dec); // s = "31416"
+s = dtoa_ifmt(s, sgn, len, dec, 'G');       // s = "3.1416"
+
+dtoa_fast returned s have room for inplace formatting
+--> no need to allocate buffer storage
+
+fmt 'r' -> "31416e-004"  = raw form w/ integer mantissa
+fmt 'e' -> "3.1416e+000" = normalized mantissa
+fmt 'g' -> "3.1416"      = shortest form
+capitalized fmt uses 'E' for exponent
+
+For dtoa.c output, we need to set up a buffer to store the string
+To cover all the fmts, s[-6] .. s[len + 5] must be avialable to use
+
+Example, using dtoa_r() for shortest digits:
+
+char *s, buf[17+12];    // shortest <= 17 digits
+
+s = dtoa_r(x, 0, 0, &dec, &sgn, &e, buf+6 , sizeof(buf)-6);
+s = dtoa_ifmt(s, sgn, e-s, dec, 'g');
+
+dtoa-lite.c 3/1/18
+==================
+
+dtoa without bignum library.
+accurate about 99.95% for shortest digits
+-- note: without testing edge case or half-way,
+-- it might not be shortest, but guaranteed round-trip
+
+Assumed close to half-way cases is actually half-way
+Assumed half-way cases will use round-to-even rule
+
+dtoa-ifmt2.c 3/2/18
+===================
+
+dtoa-ifmt1.c tried to follow printf specs.
+We can make SHORTEST string if not follow the specs
+
+Example: (mode G)
+
+0.00012 -> .00012   // no leading 0
+.000012 -> 1.2E-5   // exponent "E-005" -> "E-5"
+100     -> 100
+1000    -> 1E3      // "1000" is longer
+1200    -> 1200
+12000   -> 12000    // dtoa-ifmt2.c use E form only if shorter
+120000  -> 1.2E5    // exponent "E+005" -> "E5"
+
+Above examples, some output might be mistaken as integer.
+Added optional -D DTOA_IFMT_G to produce unambiguous DOUBLE
+(note: with the flag, it may not the shortest)
+
+REDO above, compiled with -D DTOA_IFMT_G :
+
+100     -> 1E2      // "100." is too long
+1000    -> 1E3
+1200    -> 1200.    // will not be confused as integer
+12000   -> 1.2E4    // E form is shorter this time
+120000  -> 1.2E5
+
+dtoa-ifmt1.c 3/2/18
+===================
+
+Added optional -D DTOA_IMFT_G to dtoa-ifmt1.c as well
+REDO above, compiled with -D DTOA_IFMT_G :
+
+dtoa-ifmt1.c    w/ flag DTOA_IFMT_G
+
+0.00012         0.00012     // both treated fractions the same way
+1.2E-005        1.2E-005    // use E form if 4+ 0's after dec pt
+
+100             100.0       // added ".0", unambiguous double
+1000            1000.0      // E form if 4+ 0's
+1200            1200.0
+12000           12000.0
+120000          1.2E+005    // we get 4 0's
+1200000         1.2E+006
+1.2E+007        1.2E+007    // original version switch if 6+ 0's
+
+Although dtoa-ifmt1 is more verbose, I preferred its style.
+Decimal point (if any), always between 2 digits, easier to spot.
+Exponent followed by a sign, also easier to spot.
+
+10/20/19, dtoa-ifmt1.c & dtoa-ifmt2.c
+=====================================
+
+Added fmt='n': Normalized Floating Point Representation
+
+    0.5 <= mantissa < 1
+
+see Resonance article (Jan 2016) by V Rajaraman
+TITLE: IEEE Standard for Floating Point Numbers
+LINE : www.ias.ac.in/article/fulltext/reso/021/01/0011-0030
+
+Example, for 3.1416:
+
+dtoa-ifmt1.c, fmt='n' -> "0.31416e+001"
+dtoa-ifmt2.c, fmt='n' -> ".31416e1"

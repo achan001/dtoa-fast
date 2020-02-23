@@ -1,0 +1,174 @@
+Simulation suggest max ulp = 95 ulp
+
+*** PROVE MAX ULPS = 95 ***
+
+max scaling err = 18.7026 m + 1 = 18 ULP
+max abs err = dec_error m + 18
+-> To reach 95+ ULP, dec_err >= 95 - 18 = 77 ULP
+
+1e27 = 0.807794 * 2^90
+-> If m0 < 0.807794, dec_err <= 2^96/(0.5 * 2^91) = 64 ULP
+-> TOO LOW !!!
+-> To reach 95+ ULP, m0 >= 0.807794
+-> max(dec_err) = 64 / m0 = 64 / 0.807794 = 79.2281 = 79 ULP
+
+To calculate m0 upper bound that can reach 95+ ULP:
+64 / max(m0) = 77
+     max(m0) = 64 / 77 = 0.831169
+-> m0 = [0.807794, 0.831169]
+
+### 8 scalings 1e25 branch = 1E-73 x5 + 1e25 x2 + final
+
+m(1E-73) = 0.706739 = 1.413478 / 2
+m(1e+25) = 0.516988 = 1.033976 / 2
+
+Scaling 1E-73 x5 + 1E25 x2:
+m0 = [0.807794, 0.831169]
+m1 = 0.706739 m0 = [0.570900, 0.587420]
+m2 = 1.413478 m1 = [0.806954, 0.830305]
+m3 = 0.706739 m2 = [0.570306, 0.586809]
+m4 = 1.413478 m3 = [0.806115, 0.829441]
+m5 = 0.706739 m4 = [0.569713, 0.586198]
+m6 = 1.033976 m5 = [0.589069, 0.606115]
+m7 = 1.033976 m6 = [0.609083, 0.626708]
+                                                        max rel err
+m1  .2987 + 1.2208 / (0.706739 m0) = 1.7274 / m0 + .2987     2.4371
+m2  .2987 + 1.4416 / (0.998960 m0) = 1.4431 / m0 + .2987     2.0852
+m3  .2987 + 1.2208 / (0.706004 m0) = 1.7292 / m0 + .2987     2.4393
+m4  .2987 + 1.4416 / (0.997921 m0) = 1.4446 / m0 + .2987     2.0870
+m5  .2987 + 1.2208 / (0.705270 m0) = 1.7310 / m0 + .2987     2.4416
+m6          1.5006 / (0.729232 m0) = 2.0578 / m0             2.5474
+m7          1.5006 / (0.754008 m0) = 1.9902 / m0             2.4637
+                                    -------------------------------
+                   scaling rel err = 12.123 / m0 + 1.4935  16.50128
+
+Tried to save time by summing the max rel errors.
+max scaling error = 16.50128 m + 1 = 17 ULP
+max abs error = 79 + 17 = 96 ULP ... not good enough
+
+BRANCH 1E25 final:  normalized
+last  m(last)       m8 low
+10    0.625         0.76135
+100   0.78125       0.95169 <-- max, n = -73*5 + 25*2 + 2 = -313
+1E3   0.97656       0.59481
+1E4   0.61035       0.74351
+1E5   0.76294       0.9294
+1E6   0.95367       0.58086
+1E7   0.59605       0.72609
+1E8   0.74506       0.90759
+1E9   0.93132       0.56725
+1E10  0.58208       0.70909
+1E11  0.7276        0.88634
+1E12  0.90949       0.55395
+
+max(m8/m0) = max(m8 low)/(m0 low)
+           = 0.95169 / 0.807794 = 1.178135
+
+max dec err = 64 / m0 * m8
+            = 64 * 1.178135 = 75.40064 = 75 ULP
+
+scaling err = (12.123 / m0 + 1.4935) m8 + 1
+            = 12.123 m8/m0 + 1.4935 m8 + 1
+            < 12.123 * 1.178135 + 1.4935 + 1
+            = 16.7760 = 16 ULP
+
+max abs err = 75 + 16 = 91 ULP
+
+### 8 scalings 1e12 branch = 1E-73 x5 + 1e25 + 1e12 + final
+
+Redo m7 using 1E12:
+m6 = [0.589069, 0.606115]
+m7 = 0.909495 m6 = [0.535755, 0.551259]
+m7 err = 1/m7 = 1/(0.663233 m0) = 1.5078 / m0
+
+BRANCH 1E12 final:  normalized
+last  m(last)       m8 low
+10    0.625         0.66969
+100   0.78125       0.83712
+1E3   0.97656       0.5232
+1E4   0.61035       0.654
+1E5   0.76294       0.81751
+1E6   0.95367       0.51093
+1E7   0.59605       0.63867
+1E8   0.74506       0.79833
+1E9   0.93132       0.99792 <-- max, n = -73*5 + 25 + 12 + 9 = -319
+1E10  0.58208       0.62373
+1E11  0.7276        0.77963
+1E12  0.90949       0.97453
+
+max(m8/m0) = max(m8 low)/(m0 low)
+           = 0.99792 / 0.807794 = 1.235364
+
+max dec err = 64 / m0 * m8
+            = 64 * 1.235364 = 79.063 = 79 ULP
+
+scaling err = (1E25 branch) - (1E25 err) + (1E12 err)
+            = ((12.123 - 1.9902 + 1.5078)/m0 + 1.4935) m8 + 1
+            = 11.6406 m8/m0 + 1.4935 m8 + 1
+            < 11.6406 * 1.235364 + 1.4935 + 1
+            < 16.8739 = 16 ULP
+
+max abs err = 79 + 16 = 95 ULP
+
+### 7 scalings or less:
+
+If n >= 0: used 1E60 x4 + 1E25 + 1E12 + final
+    scaling err = (2.4786 * 4 + 2.9026 + 2) m + 1 < 15.817 = 15 ULP
+    max abs_err = 79 + 15 = 94 ULP
+
+    NOTE: If used 1E60 x4 + 1E25 x2 + final, factor >= 1E291
+    -> no room for dec error to occur
+    -> max abs_err = (2.4786 * 4 + 2.9026*2)m + 1 < 16.7196 = 16 ULP
+
+If n < 0: used 1E-73 x4 + 1E25 x2 + final
+    Reuse above 1E-73 build to m4:
+    1E-73 x4 err = 2.4371 + 2.0852 + 2.4393 + 2.0870 = 9.0486
+    1E+25 x2 err = 2.9026 * 2 = 5.8052
+    scaling error = (9.0486 + 5.8052)m + 1 < 15.8538 = 15 ULP
+    max abs error = 79 + 15 = 94 ULP
+
+QED
+
+FAST-PATH can extend to 2^93 (NOT implemented)
+============================
+
+0x1p89 = 6.1897E+026    # 27 digits
+0x1p93 = 9.9035E+027    # almost 1E28
+
+Dec error = 0:
+    IF d < 1E28, 29+ digits should be ALL 0's
+    -> chopping 0's cause no errors (see example below)
+
+Only scaling error is from 1E-1:
+    IF d < 0x1p89, FAST-PATH handled it
+    ELSE scaling errors can only comes from 1E-1,
+    scaled 28 digits down to 27 (if possible)
+
+    Example: d = 7E26 > 0x1p89
+    Input = 7000000000000000000000000000000000000000E-13
+    After parsing:      7000000000000000000000000000E-1
+    After scaling:       700000000000000000000000000
+
+1E-1 = 1E-73 1E60 1E12
+-> max abs error = (2.7402 + 2.4786) m + 1 < 6.2188 = 6 ULP
+
+To extend fast-path to 0x1p93:
+-> For d <= 0x1p93, +1 >= 8 ULP
+-> (|d - b| % 8 ULP = 0) AND (|d - b| <= 6 ULP)
+-> d = b
+
+FAST-PATH #2:
+if (d is integer AND |d-b| <= 98 ULP):
+    if d <= 0x1p89: return 0
+    if d <= 0x1p93: return (int)(n0 + 6) >> 31
+
+FAST-PATH can extend to 1E28 (NOT implemented)
+============================
+When d reached 28 digits, 1E-1 is never used.
+-> no scaling errors at all, n0 is EXACT
+
+FAST-PATH #3:
+if (d is integer AND |d-b| <= 98 ULP):
+    if d <= 0x1p89: return 0
+    if d <= 0x1p90: return (int)(n0 + 6) >> 31
+    if d < 1E28:    return (int) n0
