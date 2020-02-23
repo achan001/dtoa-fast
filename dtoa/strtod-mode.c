@@ -9,7 +9,7 @@ static double strtod_cvt (const char *str, uint64_t m, unsigned bot,
   unsigned n0 = bot;      // bottom 32 bits
 
   BIT96("mantissa only");
-#if FAST_BF96
+#ifdef FAST_BF96
   MUL_96(n2,n1,n0,bexp, i);
 #else
   for(; i < 0; i += 73) DIV_1E73(n2,n1,n0,bexp);
@@ -110,7 +110,9 @@ HEX_CVT:
     double bad;
     if (bexp>0) bad = round ? HUGE_VAL : DBL_MAX;
     else        bad = round!=0x800 ? 0 : 0x1p-1074;
+#ifndef NO_ERRNO
     errno = ERANGE;
+#endif     
     return neg ? -bad : bad;
   }
 
@@ -202,7 +204,9 @@ double strtod_fast(const char *str, char **endptr)
     double bad;
     if (nexp>0) bad = round ? HUGE_VAL : DBL_MAX;
     else        bad = round!=0x800 ? 0 : 0x1p-1074;
+#ifndef NO_ERRNO
     errno = ERANGE;
+#endif
     return neg ? -bad : bad;
   }
 
