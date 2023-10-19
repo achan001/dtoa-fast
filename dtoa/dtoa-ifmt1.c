@@ -25,7 +25,7 @@ char* dtoa_ifmt(char *s, int sgn, int len, int dec, char fmt)
   int i = 0;
   if (ISDIGIT(*s)) {                    // skip inf, nan
     char c = fmt | 32;                  // fmt lower cased
-    if (c != 'g' || dec < -3 || dec-len > 5 - DTOA_IFMT_G) {
+    if (c != 'g' || dec < (len==1)-3 || dec > len+4 - DTOA_IFMT_G) {
       if (c == 'r') dec -= len;         // d+E[+-]ddd
       else if (c == 'n')     {s[i = -2] = '0'; s[-1] = '.';}
       else if (dec--, len>1) {s[i = -1] = s[0]; s[0] = '.';}
