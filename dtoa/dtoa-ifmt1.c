@@ -4,10 +4,10 @@
 // Non-recognized fmt defaulted to exponential form
 // capitalized fmt uses capitalized 'E' exponent
 
-// fmt='n' -> "0.31416e+001" = normalized form, fractional mantissa
-// fmt='e' -> "3.1416e+000"  = exponential form, d.ddddddd mantissa
-// fmt='r' -> "31416e-004"   = raw form, integer mantissa
-// fmt='g' -> "3.1416"       = shortest form
+// fmt='n' -> "0.31416e+01" = normalized form, fractional mantissa
+// fmt='e' -> "3.1416e+00"  = exponential form, d.ddddddd mantissa
+// fmt='r' -> "31416e-04"   = raw form, integer mantissa
+// fmt='g' -> "3.1416"      = shortest form
 
 // s points to mantissa digits
 // -> s[-6] .. s[len+5] must be available to use
@@ -23,7 +23,7 @@
 char* dtoa_ifmt(char *s, int sgn, int len, int dec, char fmt)
 {
   int i = 0;
-  if (ISDIGIT(*s)) {                    // skip Inf, NaN
+  if (ISDIGIT(*s)) {                    // skip inf, nan
     char c = fmt | 32;                  // fmt lower cased
     if (c != 'g' || dec < -3 || dec-len > 5 - DTOA_IFMT_G) {
       if (c == 'r') dec -= len;         // d+E[+-]ddd
@@ -31,7 +31,7 @@ char* dtoa_ifmt(char *s, int sgn, int len, int dec, char fmt)
       else if (dec--, len>1) {s[i = -1] = s[0]; s[0] = '.';}
       s[len++] = 'E' | (fmt & 32);
       s[len++] = dec>=0 ? '+' : (dec=-dec, '-');
-      s[len++] = '0' + dec/100; dec %= 100;
+      if (dec>99) {s[len++] = '0' + dec/100; dec %= 100;}
       s[len++] = '0' + dec/10;
       s[len++] = '0' + dec%10;
       s[len++] = '\0';
