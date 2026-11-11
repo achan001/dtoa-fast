@@ -238,8 +238,8 @@ FACTOR      TOP       BOT       MAX
 10 to 1E12  2.0       1.7180    2.0
 
 For scalings 7 times or less:
-    scaling error < (2.9026*6) m + 1 < 18.4156 = 18 ULP
-    max abs error = 79.2282 m + 18 < 97.2282   = 97 ULP
+    scaling error < (2.9026*6) m + 1 < 18.4156    < 19 ULP
+    max abs error = 79.2282 m + 18.4156 < 97.6438 < 98 ULP
 
 For max of 8 scalings, 1E-73 used 5 times:
     nexp = [-327, -316] # error(1E25 and 1E12) = 2.9026 + 2
@@ -250,14 +250,14 @@ For max of 8 scalings, 1E-73 used 5 times:
 
 1E-73 5 times = 3*2.7402 + 2*2.3384 = 12.8974
 1E+25 2 times = 2*2.9026 = 5.8052
-scaling error = (12.8974 + 5.8052) m + 1 < 19.7026 = 19 ULP
+scaling error = (12.8974 + 5.8052) m + 1 < 19.7026 < 20 ULP
 
-max abs error = 79.2282 m + 19 < 98.2282 = 98 ULP
+max abs error = 79.2282 m + 19.7026 < 98.9308 < 99 ULP
 
 "Bad" ULP error found:
-mantissa      ULP error        x
-<= 28 digits  17.645 = 17 ULP  97492207803e-306
->  28 digits  94.364 = 94 ULP  1000883030000000000000000000.999999E-319
+mantissa      ULP error     x
+<= 28 digits  17.645        97492207803e-306
+>  28 digits  94.364        1000883030000000000000000000.999999E-319
 
 FAST-PATH
 =========
