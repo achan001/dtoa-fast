@@ -237,10 +237,6 @@ FACTOR      TOP       BOT       MAX
 1E+25       2.5006    2.9026    2.9026
 10 to 1E12  2.0       1.7180    2.0
 
-For scalings 7 times or less:
-    scaling error < (2.9026*6) m + 1 < 18.4156    < 19 ULP
-    max abs error = 79.2282 m + 18.4156 < 97.6438 < 98 ULP
-
 For max of 8 scalings, 1E-73 used 5 times:
     nexp = [-327, -316] # error(1E25 and 1E12) = 2.9026 + 2
     nexp = [-314, -306] # error(1E25 x2 times) = 2.9026 * 2 -> WORST
@@ -250,14 +246,38 @@ For max of 8 scalings, 1E-73 used 5 times:
 
 1E-73 5 times = 3*2.7402 + 2*2.3384 = 12.8974
 1E+25 2 times = 2*2.9026 = 5.8052
-scaling error = (12.8974 + 5.8052) m + 1 < 19.7026 < 20 ULP
+scaling error = 12.8974 + 5.8052 + 1 = 19.7026
+max rel error = 79.2282 + 19.7026 = 98.9308
+max ulp error = 98 ULP, used in actual code
 
-max abs error = 79.2282 m + 19.7026 < 98.9308 < 99 ULP
+But x that can simultaneously maximize all rel errors does not exist.
+This is the worst I've found. Reminder: we are interested in max(ULPerr)
 
-"Bad" ULP error found:
-mantissa      ULP error     x
-<= 28 digits  17.645        97492207803e-306
->  28 digits  94.364        1000883030000000000000000000.999999E-319
+Example, x = 1000883030000000000000000000.999999E-319
+exact       code 96 bits estimate                ULPerr   RelErr    Gain
+m=x/1E-319  0x0.cefa4e71b212b259e6000000p+90      63      77.921
+m*1E-73     0x0.92477ae0a5353aab0c7d6ffdp-152     46      80.504   2.582
+m*1E-146    0x0.cec32d13cd0f833961f329b7p-395     67      82.955   2.452
+m*1E-219    0x0.92208469cb27cd8eff889459p-637     48      84.091   1.136
+m*1E-292    0x0.ce8c1a652012b28bc292aef4p-880     70      86.76    2.669
+m*1E-365    0x0.91f99853ba4c101eb3d1fd3dp-1122    51      89.44    2.68
+m*1E-340    0x0.96ef41711cf49743b5f11ef0p-1039    54      91.589   2.149
+m*1E-328    0x0.894632c2580ba25e15bd4836p-999     50      93.244   1.655
+m*1E-319=x  0x0.ffb171f5ba07f7244dcf8549p-970     94      94.113   0.869
+
+Here is another bad case, but without mantissa errors
+
+Example, x = 97492207803e-306
+exact       code 96 bits estimate                ULPerr   RelErr    Gain
+m=x/1E-306  0x0.b597e845d800000000000000p+37      0       0
+m*1E-73     0x0.8056cf1cf19560fae1ba930ap-205     1       1.995    1.995
+m*1E-146    0x0.b56789cfc2de78eeee87c6acp-448     3       4.234    2.239
+m*1E-219    0x0.80349ff269e88d1e970ca2dbp-690     3       5.99     1.757
+m*1E-292    0x0.b537383bdb0d0d51b9fb7e64p-933     6       8.476    2.486
+m*1E-365    0x0.801279e2d55e1779eee713a5p-1175    5       9.994    1.518
+m*1E-340    0x0.846c6bf7ab011114e83a0686p-1092    7      13.532    3.538
+m*1E-315    0x0.88ec36ebb355fc63beb51a82p-1009    9      16.827    3.295
+m*1E-306=x  0x0.ff09d65dfba5733550d95446p-980    17      17.064    0.237
 
 FAST-PATH
 =========
