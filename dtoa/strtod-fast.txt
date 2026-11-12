@@ -244,40 +244,45 @@ For max of 8 scalings, 1E-73 used 5 times:
 1E-73 / 2^242 = .70674
 .70674^5 = .70527 / 4   # need minimum of 2 BOT branches
 
-1E-73 5 times = 3*2.7402 + 2*2.3384 = 12.8974
-1E+25 2 times = 2*2.9026 = 5.8052
-scaling error = 12.8974 + 5.8052 + 1 = 19.7026
-max rel error = 79.2282 + 19.7026 = 98.9308
-max ulp error = 98 ULP, used in actual code
+mantissa error <= 79.2282
+1E-73 5 times  <= 3*2.7402 + 2*2.3384 = 12.8974
+1E+25 2 times  <= 2*2.9026 = 5.8052
+79.2282 + 12.8974 + 5.8052 = 97.9308
 
-But x that can simultaneously maximize all rel errors does not exist.
-This is the worst I've found. Reminder: we are interested in max(ULPerr)
+Last scaling (by 10 to 1E12):
+max ulp error = 97.9308 * max(m) + 1 < 99 ULP
+To be safe, code set  max ulp error <= 99 ULP
 
-Example, x = 1000883030000000000000000000.999999E-319
-exact       code 96 bits estimate                ULPerr   RelErr    Gain
-m=x/1E-319  0x0.cefa4e71b212b259e6000000p+90      63      77.921
-m*1E-73     0x0.92477ae0a5353aab0c7d6ffdp-152     46      80.504   2.582
-m*1E-146    0x0.cec32d13cd0f833961f329b7p-395     67      82.955   2.452
-m*1E-219    0x0.92208469cb27cd8eff889459p-637     48      84.091   1.136
-m*1E-292    0x0.ce8c1a652012b28bc292aef4p-880     70      86.76    2.669
-m*1E-365    0x0.91f99853ba4c101eb3d1fd3dp-1122    51      89.44    2.68
-m*1E-340    0x0.96ef41711cf49743b5f11ef0p-1039    54      91.589   2.149
-m*1E-328    0x0.894632c2580ba25e15bd4836p-999     50      93.244   1.655
-m*1E-319=x  0x0.ffb171f5ba07f7244dcf8549p-970     94      94.113   0.869
+Note: X that can simultaneously maximize all rel errors does not exist.
+This is the worst I've found. Reminder: we are interested in max ulp error.
+
+Example, X = 1000883030000000000000000000.999999E-319, -319 = -73*5+25+12+9
+exact       code 96 bits estimate                ULPerr   RelErr   Gain
+M=x/1E-319  0x0.cefa4e71b212b259e6000000p+90      63      77.921
+M*1E-73     0x0.92477ae0a5353aab0c7d6ffdp-152     46      80.504   2.582
+M*1E-146    0x0.cec32d13cd0f833961f329b7p-395     67      82.955   2.452
+M*1E-219    0x0.92208469cb27cd8eff889459p-637     48      84.091   1.136
+M*1E-292    0x0.ce8c1a652012b28bc292aef4p-880     70      86.760   2.669
+M*1E-365    0x0.91f99853ba4c101eb3d1fd3dp-1122    51      89.440   2.680
+M*1E-340    0x0.96ef41711cf49743b5f11ef0p-1039    54      91.589   2.149
+M*1E-328    0x0.894632c2580ba25e15bd4836p-999     50      93.244   1.655
+M*1E-319=X  0x0.ffb171f5ba07f7244dcf8549p-970     94      94.113   0.869
+Last step ulperr <= floor(93.224*0x0.ffb17 + 1) = 94
 
 Here is another bad case, but without mantissa errors
 
-Example, x = 97492207803e-306
-exact       code 96 bits estimate                ULPerr   RelErr    Gain
-m=x/1E-306  0x0.b597e845d800000000000000p+37      0       0
-m*1E-73     0x0.8056cf1cf19560fae1ba930ap-205     1       1.995    1.995
-m*1E-146    0x0.b56789cfc2de78eeee87c6acp-448     3       4.234    2.239
-m*1E-219    0x0.80349ff269e88d1e970ca2dbp-690     3       5.99     1.757
-m*1E-292    0x0.b537383bdb0d0d51b9fb7e64p-933     6       8.476    2.486
-m*1E-365    0x0.801279e2d55e1779eee713a5p-1175    5       9.994    1.518
-m*1E-340    0x0.846c6bf7ab011114e83a0686p-1092    7      13.532    3.538
-m*1E-315    0x0.88ec36ebb355fc63beb51a82p-1009    9      16.827    3.295
-m*1E-306=x  0x0.ff09d65dfba5733550d95446p-980    17      17.064    0.237
+Example, X = 97492207803e-306, -306 = -73*5+25*2+9
+exact       code 96 bits estimate                ULPerr   RelErr   Gain
+M=x/1E-306  0x0.b597e845d800000000000000p+37       0      0
+M*1E-73     0x0.8056cf1cf19560fae1ba930ap-205      1      1.995    1.995
+M*1E-146    0x0.b56789cfc2de78eeee87c6acp-448      3      4.234    2.239
+M*1E-219    0x0.80349ff269e88d1e970ca2dbp-690      3      5.990    1.757
+M*1E-292    0x0.b537383bdb0d0d51b9fb7e64p-933      6      8.476    2.486
+M*1E-365    0x0.801279e2d55e1779eee713a5p-1175     5      9.994    1.518
+M*1E-340    0x0.846c6bf7ab011114e83a0686p-1092     7     13.532    3.538
+M*1E-315    0x0.88ec36ebb355fc63beb51a82p-1009     9     16.827    3.295
+M*1E-306=X  0x0.ff09d65dfba5733550d95446p-980     17     17.064    0.237
+Last step ulperr <= floor(16.827*0x0.ff09d + 1) = 17
 
 FAST-PATH
 =========
