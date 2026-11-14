@@ -247,10 +247,10 @@ For max of 8 scalings, 1E-73 used 5 times:
 mantissa error <= 79.2282
 1E-73 5 times  <= 3*2.7402 + 2*2.3384 = 12.8974
 1E+25 2 times  <= 2*2.9026 = 5.8052
-79.2282 + 12.8974 + 5.8052 = 97.9308
+12.8974 + 5.8052 = 18.7026 > 3*6 --> 7 scalings or less has less errors
 
-Last scaling (by 10 to 1E12):
-max ulp error = 97.9308 * max(m) + 1 < 99 ULP
+Add last scaling (by 10 to 1E12):
+max ulp error = (79.2282+18.7026) * max(m) + 1 < 98.8308 < 99 ULP
 To be safe, code set  max ulp error <= 99 ULP
 
 Note: X that can simultaneously maximize all rel errors does not exist.
@@ -258,7 +258,7 @@ This is the worst I've found. Reminder: we are interested in max ulp error.
 
 Example, X = 1000883030000000000000000000.999999E-319, -319 = -73*5+25+12+9
 exact       code 96 bits estimate                ULPerr   RelErr   Gain
-M=x/1E-319  0x0.cefa4e71b212b259e6000000p+90      63      77.921
+M=X/1E-319  0x0.cefa4e71b212b259e6000000p+90      63      77.921
 M*1E-73     0x0.92477ae0a5353aab0c7d6ffdp-152     46      80.504   2.582
 M*1E-146    0x0.cec32d13cd0f833961f329b7p-395     67      82.955   2.452
 M*1E-219    0x0.92208469cb27cd8eff889459p-637     48      84.091   1.136
@@ -273,7 +273,7 @@ Here is another bad case, but without mantissa errors
 
 Example, X = 97492207803e-306, -306 = -73*5+25*2+9
 exact       code 96 bits estimate                ULPerr   RelErr   Gain
-M=x/1E-306  0x0.b597e845d800000000000000p+37       0      0
+M=X/1E-306  0x0.b597e845d800000000000000p+37       0      0
 M*1E-73     0x0.8056cf1cf19560fae1ba930ap-205      1      1.995    1.995
 M*1E-146    0x0.b56789cfc2de78eeee87c6acp-448      3      4.234    2.239
 M*1E-219    0x0.80349ff269e88d1e970ca2dbp-690      3      5.990    1.757
