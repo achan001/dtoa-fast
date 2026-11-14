@@ -253,7 +253,7 @@ Add last scaling (by 10 to 1E12):
 max ulp error = (79.2282+18.7026) * max(m) + 1 < 98.8308 < 99 ULP
 To be safe, code set  max ulp error <= 99 ULP
 
-Note: X that can simultaneously maximize all rel errors does not exist.
+Note: X that can simultaneously maximize all rel errors does not exist. (*)
 This is the worst I've found. Reminder: we are interested in max ulp error.
 
 Example, X = 1000883030000000000000000000.999999E-319, -319 = -73*5+25+12+9
@@ -283,6 +283,18 @@ M*1E-340    0x0.846c6bf7ab011114e83a0686p-1092     7     13.532    3.538
 M*1E-315    0x0.88ec36ebb355fc63beb51a82p-1009     9     16.827    3.295
 M*1E-306=X  0x0.ff09d65dfba5733550d95446p-980     17     17.064    0.237
 Last step ulperr <= floor(16.827*0x0.ff09d + 1) = 17
+
+(*) If we assume rel errors are all maximized, ULPerr <= 95 ULP
+This occured between (1E-292 ≈ 0.9979 * 2^-970) to (0.9999... * 2^-970 ≈ 1.002E-292)
+In this region, we have small 28 digits mantissa and big binary fractional mantissa
+Note: 1E-292 = 1E27 * 1E-319
+
+p2> from math import *
+p2> from max_ulp import *
+p2> max_ulp(frexp(1.000E27)[0], -319, dec_err)
+95.870998034620982
+p2> max_ulp(frexp(1.002E27)[0], -319, dec_err)
+95.873978822123277
 
 FAST-PATH
 =========
